@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { inngest } from "@/inngest/client";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key");
 
@@ -45,37 +46,13 @@ export async function submitContactForm(formData: FormData) {
     // Disconnect Prisma correctly
     await prisma.$disconnect();
 
-    // Only attempt to send emails if a real RESEND_API_KEY is present
+    // Only trigger background emails if a real RESEND_API_KEY is present
     if (process.env.RESEND_API_KEY) {
-      // 1. Notify Owner
-      await resend.emails.send({
-        from: "Portfolio <onboarding@resend.dev>", // Replace with verified domain in production
-        to: "hello@yourdomain.com", // Replace with your email
-        subject: `New Lead: ${parsedData.serviceRequested} from ${parsedData.name}`,
-        html: `
-          <h1>New Lead Details</h1>
-          <p><strong>Name:</strong> ${parsedData.name}</p>
-          <p><strong>Email:</strong> ${parsedData.email}</p>
-          <p><strong>Service Requested:</strong> ${parsedData.serviceRequested}</p>
-          <p><strong>Budget:</strong> ${parsedData.budget}</p>
-          <p><strong>Message:</strong></p>
-          <p>${parsedData.message}</p>
-        `,
-      });
-
-      // 2. Auto-Responder to Prospect
-      await resend.emails.send({
-        from: "Portfolio <onboarding@resend.dev>",
-        to: parsedData.email,
-        subject: "Thanks for reaching out!",
-        html: `
-          <h2>Hi ${parsedData.name},</h2>
-          <p>Thanks for getting in touch about your ${parsedData.serviceRequested} project!</p>
-          <p>I have received your message and will get back to you within 24-48 hours to discuss next steps.</p>
-          <br/>
-          <p>Best regards,</p>
-          <p><strong>Portfolio Owner</strong></p>
-        `,
+      await inngest.send({
+        name: "contact/lead.submitted",
+        data: {
+          parsedData,
+        },
       });
     }
 

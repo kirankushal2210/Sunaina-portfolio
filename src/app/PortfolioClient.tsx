@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState, useCallback, createRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Command } from "cmdk";
 import { useGSAP } from "@gsap/react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
-import { ArrowUpRight, X } from "lucide-react";
+import { ArrowUpRight, X, Search } from "lucide-react";
 import Tilt from "react-parallax-tilt";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -261,10 +262,55 @@ export default function PortfolioClient({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   
+  // Search State
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Project[]>([]);
+
+  // Keyboard Shortcut for Cmd+K
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  // Fetch search results
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+        .then(res => res.json())
+        .then(data => setSearchResults(data.projects || []));
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+  
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
   } as any) as any;
   
+  // Real-Time Presence
+  const [liveViewers, setLiveViewers] = useState(1);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/presence');
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.viewers) setLiveViewers(data.viewers);
+      } catch (e) {}
+    };
+    return () => eventSource.close();
+  }, []);
+
   // Analytics State
   const [projectStats, setProjectStats] = useState({ views: 0, likes: 0 });
   const [hasLiked, setHasLiked] = useState(false);
@@ -703,6 +749,17 @@ export default function PortfolioClient({
             <h1 className="hero-name-line display-massive uppercase">
               Sunaina.
             </h1>
+          </div>
+
+          {/* Navbar Center */}
+          <div className="hidden md:flex flex-col items-center">
+            <span className="text-xl font-display text-white tracking-widest uppercase">Sunaina</span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-[10px] text-white/50 font-mono tracking-widest uppercase">
+                {liveViewers} {liveViewers === 1 ? 'Viewer' : 'Viewers'} Live
+              </span>
+            </div>
           </div>
 
           {/* Role tag */}
@@ -1245,6 +1302,67 @@ export default function PortfolioClient({
                 </motion.div>
               )}
             </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cmd+K Search Modal */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start justify-center pt-[10vh]"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden font-mono"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Command className="w-full h-full flex flex-col" shouldFilter={false}>
+                <div className="flex items-center border-b border-white/10 px-4">
+                  <span className="text-white/50 text-xl mr-3">⌕</span>
+                  <Command.Input 
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                    placeholder="Search projects, categories, clients..." 
+                    className="w-full bg-transparent border-none outline-none py-6 text-lg text-white placeholder:text-white/30"
+                    autoFocus
+                  />
+                  <div className="text-white/30 text-xs px-2 py-1 border border-white/10 rounded">ESC</div>
+                </div>
+                
+                <Command.List className="max-h-[60vh] overflow-y-auto p-2">
+                  <Command.Empty className="py-12 text-center text-white/50 text-sm">
+                    {searchQuery ? "No results found." : "Start typing to search..."}
+                  </Command.Empty>
+                  
+                  {searchResults.map((project) => (
+                    <Command.Item
+                      key={project.id}
+                      value={project.title}
+                      onSelect={() => {
+                        setSelectedProject(project);
+                        setIsDrawerOpen(true);
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors aria-selected:bg-white/10 text-white"
+                    >
+                      <div className="w-10 h-10 bg-white/5 rounded overflow-hidden flex-shrink-0">
+                        {project.posterAsset && <img src={project.posterAsset} className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold">{project.title}</span>
+                        <span className="text-xs text-white/50">{project.category} // {project.client}</span>
+                      </div>
+                    </Command.Item>
+                  ))}
+                </Command.List>
+              </Command>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
