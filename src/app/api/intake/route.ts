@@ -27,12 +27,7 @@ export async function POST(req: Request) {
     // Save lead to database
     let lead;
     try {
-      // FIX: In Next.js dev mode, globalThis.prisma caches the old PrismaClient.
-      // If prisma.lead is undefined (because the server wasn't restarted after schema changes),
-      // we temporarily instantiate a fresh client to bypass the cache.
-      const activePrisma = prisma.lead ? prisma : new (require('@prisma/client').PrismaClient)();
-      
-      lead = await activePrisma.lead.create({
+      lead = await prisma.lead.create({
         data: {
           name: name.trim(),
           email: email.trim().toLowerCase(),
@@ -40,10 +35,6 @@ export async function POST(req: Request) {
           details: details.trim(),
         },
       });
-      
-      // Close the temporary client if we created one to avoid connection leaks
-      if (!prisma.lead) await activePrisma.$disconnect();
-      
     } catch (dbError: any) {
       console.error('Database Error:', dbError);
       return NextResponse.json(
