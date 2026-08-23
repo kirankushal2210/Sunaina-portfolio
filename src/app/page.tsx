@@ -47,7 +47,7 @@ export default async function Home() {
       initialExperiences = experiences;
     }
   } catch (error) {
-    console.warn("Database connection failed. Serving fallback UI.", error);
+    console.warn("Database unreachable — serving fallback data. Code:", (error as any)?.code || "UNKNOWN");
   }
 
   return (

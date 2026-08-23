@@ -58,8 +58,6 @@ export async function GET() {
         } catch (e) {}
       };
 
-      // When the stream is aborted/closed by the client
-      requestAnimationFrame = () => {}; // hack to avoid node typings issue
       // We rely on the client dropping the connection, and the stream's cancel method.
       return cleanup;
     },

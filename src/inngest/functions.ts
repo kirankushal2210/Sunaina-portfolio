@@ -4,8 +4,10 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key");
 
 export const processLeadEvent = inngest.createFunction(
-  { id: "process-lead-submission" },
-  { event: "contact/lead.submitted" },
+  { 
+    id: "process-lead-submission",
+    triggers: [{ event: "contact/lead.submitted" }]
+  },
   async ({ event, step }) => {
     const { parsedData } = event.data;
 

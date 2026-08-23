@@ -91,3 +91,12 @@ model VerificationToken {
  
   @@id([identifier, token])
 }
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  service     String
+  details     String
+  created_at  DateTime @default(now())
+}

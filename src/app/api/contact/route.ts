@@ -1,25 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { submitContactForm } from '@/app/actions/contact';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, message } = body;
+    const result = await submitContactForm(body);
 
-    if (!name || !email || !message) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const newContactMessage = await prisma.contactMessage.create({
-      data: {
-        name,
-        email,
-        message,
-      },
-    });
-
-    return NextResponse.json({ success: true, data: newContactMessage }, { status: 201 });
+    return NextResponse.json({ success: true, message: result.message }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to submit message' }, { status: 500 });
+    console.error('Contact API Error:', error);
+    return NextResponse.json({ error: 'Failed to submit contact message' }, { status: 500 });
   }
 }

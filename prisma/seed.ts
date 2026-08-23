@@ -66,16 +66,7 @@ async function main() {
       metrics: ['Brand Identity Established'],
       content: 'Premium business card design with gold foil accents and elegant typography.',
     },
-    {
-      title: 'Cakes & Co. Nallagandla Launch',
-      category: 'Social Media',
-      client: 'Cakes & Co.',
-      year: '2025',
-      posterAsset: '/projects/cake-landing.jpg',
-      aspectRatio: 'square',
-      metrics: ['Launch Success', '500+ RSVPs'],
-      content: 'Social media launch campaign for a new bakery outlet in Nallagandla.',
-    },
+
     {
       title: 'Janmashtami Special',
       category: 'Social Media',
@@ -166,16 +157,7 @@ async function main() {
       metrics: ['+200% Shares'],
       content: 'Creative and playful social media post for Friendship Day featuring food illustrations.',
     },
-    {
-      title: 'MIDS - Mobile Dentistry Bus Wrap',
-      category: 'Print',
-      client: 'MIDS',
-      year: '2024',
-      posterAsset: '/projects/mids-bus-wrap.jpg',
-      aspectRatio: 'horizontal',
-      metrics: ['Out of Home Ads'],
-      content: 'Full vehicle wrap design for a mobile dentistry community service bus.',
-    },
+
     {
       title: 'Minus - Friendship Day',
       category: 'Social Media',
