@@ -443,7 +443,7 @@ export default function PortfolioClient({
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       // Cursor Repulsion
-      if (dist < repulsionRadius) {
+      if (dist < repulsionRadius && dist > 0.1) {
         const force = (repulsionRadius - dist) / repulsionRadius;
         repX = -(dx / dist) * force * repulsionForce * 0.1;
         repY = -(dy / dist) * force * repulsionForce * 0.1;
@@ -462,8 +462,16 @@ export default function PortfolioClient({
       core.x += core.vx;
       core.y += core.vy;
 
+      if (!Number.isFinite(core.x) || !Number.isFinite(core.y)) {
+        core.x = core.anchorX || 200;
+        core.y = core.anchorY || 200;
+        core.vx = 0;
+        core.vy = 0;
+      }
+
       if (core.ref.current) {
         core.ref.current.style.transform = `translate3d(${core.x}px, ${core.y}px, 0) translate(-50%, -50%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        core.ref.current.style.opacity = "1";
       }
     });
 
@@ -587,17 +595,6 @@ export default function PortfolioClient({
         "-=1.5"
       );
 
-      tl.from(
-        ".toolset-core-item-physics",
-        {
-          x: 60,
-          opacity: 0,
-          duration: 0.9,
-          stagger: 0.15,
-          ease: "power3.out",
-        },
-        "-=0.8"
-      );
 
       tl.from(
         ".hero-cta",
@@ -839,6 +836,7 @@ export default function PortfolioClient({
                 key={core.id}
                 className="toolset-core-item-physics"
                 ref={coresPhysics.current[i].ref}
+                style={{ opacity: 1 }}
               >
                 <span className="toolset-core-number">{core.number}</span>
                 <div className="toolset-icon-container">
@@ -905,7 +903,7 @@ export default function PortfolioClient({
         </div>
 
         <motion.div layout className="projects-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 w-full relative z-10">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="popLayout" initial={false}>
             {filteredProjects.map((project, i) => {
               // Determine frame style based on category
               const isMobileFrame = project.category === "Social Media" || project.category === "Packaging";
@@ -916,7 +914,7 @@ export default function PortfolioClient({
               return (
                 <motion.div
                   layout
-                  initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                  initial={{ opacity: 1, scale: 1, y: 0 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 50 }}
                   transition={{ type: "spring", damping: 25, stiffness: 200 }}

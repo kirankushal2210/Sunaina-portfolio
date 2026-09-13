@@ -1,11 +1,8 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || "dummy",
@@ -17,14 +14,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        // The role field isn't natively on user type without module augmentation, but we can append it:
-        (session.user as any).role = (user as any).role;
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+        (session.user as any).role = token.role || "user";
       }
       return session;
     },
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = (user as any).role || "user";
+      }
+      return token;
+    },
   },
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
 });
